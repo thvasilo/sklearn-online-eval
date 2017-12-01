@@ -19,6 +19,10 @@ class TemplateEstimator(BaseEstimator):
     def __init__(self, demo_param='demo_param'):
         self.demo_param = demo_param
 
+    def partial_fit(self, X, y):
+        X, y = check_X_y(X, y)
+        return self
+
     def fit(self, X, y):
         """A reference implementation of a fitting function
 
