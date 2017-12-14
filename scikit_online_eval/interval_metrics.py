@@ -44,18 +44,29 @@ def _check_interval_array(y_interval):
 # TODO: This doesn't look like a good way to do this currently
 # Either properly pass kwargs to predict s.t. quantiles and intervals are calculated,
 # or adjust/abandon this class. Also inheriting a private member is not cool.
-class IntervalScorer(_BaseScorer):
-    def __init__(self, score_func, sign, kwargs):
-        super().__init__(score_func, sign, kwargs)
+class IntervalScorer():
+    def __init__(self, score_func, kwargs):
+        self._kwargs = kwargs
+        self._score_func = score_func
 
-    def __call__(self, estimator, X, y_true, sample_weight=None):
-        super().__call__(estimator, X, y_true, sample_weight=sample_weight)
+    def __call__(self, estimator, X, y_true):
 
-        y_pred = estimator.predict_interval(X, **self._kwargs)
+        y_interval = estimator.predict_interval(X, **self._kwargs)
 
-        if sample_weight is not None:
-            return self._sign * self._score_func(y_true, y_pred,
-                                                 sample_weight=sample_weight,
-                                                 **self._kwargs)
-        else:  # tvas: The original passes the kwargs here, either do it that way or don't inherit
-            return self._sign * self._score_func(y_true, y_pred)
+        return self._score_func(y_true, y_interval)
+
+
+class MultiIntervalScorer:
+    def __init__(self, score_funcs: dict, kwargs):
+        self._kwargs = kwargs
+        self._score_funcs = score_funcs
+
+    def __call__(self, estimator, X, y_true):
+
+        y_interval = estimator.predict_interval(X, **self._kwargs)
+
+        scores = {}
+        for score_name, score_func in self._score_funcs.items():
+            scores[score_name] = score_func(y_true, y_interval)
+
+        return scores
