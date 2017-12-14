@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_almost_equal
 from sklearn.linear_model import SGDRegressor
-from sklearn.metrics import mean_squared_error, make_scorer
+from sklearn.metrics import mean_squared_error, make_scorer, r2_score
 
 from evaluation_functions import interleaved_evaluation, prequential_evaluation
 from skltemplate import TemplateEstimator
@@ -50,6 +50,25 @@ def test_prequential_window():
 
     scores = prequential_evaluation(estimator, X, y, mse_scorer, window_size=window_size)
     eq_(len(scores),  n_samples / window_size)
+
+
+def test_prequential_multimetric():
+    n_samples = 100
+    window_size = 10
+    assert n_samples % window_size == 0  # Meta-test, this needs to hold
+    X = np.random.random((n_samples, 10))
+    y = X[:, 0] ** 2
+    estimator = TemplateEstimator()
+    mse_scorer = make_scorer(mean_squared_error)
+    r2_scorer = make_scorer(r2_score)
+
+    score_dict = {"mse": mse_scorer, "r2": r2_scorer}
+
+    result_dict = prequential_evaluation(estimator, X, y, score_dict, window_size=window_size)
+
+    assert isinstance(result_dict, dict)
+    for score_name, score_list in result_dict.items():
+        eq_(len(score_list), n_samples / window_size)
 
 
 def test_prequential_incomplete_window():
